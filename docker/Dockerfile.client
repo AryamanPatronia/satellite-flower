@@ -1,0 +1,15 @@
+FROM python:3.10-slim
+
+# Set working dir
+WORKDIR /app
+
+# Copy source
+COPY client/ ./client/
+COPY data/ ./data/
+COPY client_requirements.txt .
+
+# Install dependencies
+RUN pip install --no-cache-dir -r client_requirements.txt
+
+# Command to run the clients
+CMD ["python", "client/client.py", "0"]

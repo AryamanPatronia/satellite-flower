@@ -1,0 +1,10 @@
+FROM python:3.10-slim
+
+WORKDIR /app
+
+COPY dashboard/status_monitor.py .
+COPY shared_logs shared_logs
+
+RUN pip install rich
+
+CMD ["python", "status_monitor.py"]

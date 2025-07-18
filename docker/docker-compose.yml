@@ -1,0 +1,99 @@
+version: "3.8"
+
+services:
+
+  server:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.server
+    container_name: fl_server
+    ports:
+      - "8080:8080"
+
+# Satellite clients for federated learning
+  
+  client_1:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.client
+    container_name: satellite_1
+    environment:
+      - CLIENT_ID=1
+      - SERVER_ADDRESS=server:8080
+    depends_on:
+      - server
+    volumes:
+      - ../shared_logs:/app/shared_logs
+
+  client_2:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.client
+    container_name: satellite_2
+    environment:
+      - CLIENT_ID=2
+      - SERVER_ADDRESS=server:8080
+    depends_on:
+      - server
+    volumes:
+      - ../shared_logs:/app/shared_logs
+
+  client_3:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.client
+    container_name: satellite_3
+    environment:
+      - CLIENT_ID=3
+      - SERVER_ADDRESS=server:8080
+    depends_on:
+      - server
+    volumes:
+      - ../shared_logs:/app/shared_logs
+
+  client_4:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.client
+    container_name: satellite_4
+    environment:
+      - CLIENT_ID=4
+      - SERVER_ADDRESS=server:8080
+    depends_on:
+      - server
+    volumes:
+      - ../shared_logs:/app/shared_logs
+
+  client_5:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.client
+    container_name: satellite_5
+    environment:
+      - CLIENT_ID=5
+      - SERVER_ADDRESS=server:8080
+    depends_on:
+      - server
+    volumes:
+      - ../shared_logs:/app/shared_logs
+
+
+
+# Dashboard service to monitor the training process
+  dashboard:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.dashboard
+    container_name: status_dashboard
+    depends_on:
+      - server
+      - client_1
+      - client_2
+      - client_3
+      - client_4
+      - client_5
+    volumes:
+      - ../shared_logs:/app/shared_logs
+    tty: true
+    entrypoint: tail -f /dev/null  # Prevent auto-running dashboard in log stream
+
