@@ -34,13 +34,15 @@ def load_data(client_id):
 def train(model, train_loader, epochs, device):
     model.train()
     optimizer = torch.optim.SGD(model.parameters(), lr=0.001)
-    for _ in range(epochs):
+    for epoch in range(epochs):  # <-- FIXED here
         for x, y in train_loader:
             x, y = x.to(device), y.to(device)
             optimizer.zero_grad()
             loss = F.cross_entropy(model(x), y)
             loss.backward()
             optimizer.step()
+        print(f"Epoch {epoch + 1} loss: {loss.item():.4f}")
+
 
 def test(model, test_loader, device):
     model.eval()
@@ -57,7 +59,7 @@ def test(model, test_loader, device):
 if __name__ == "__main__":
     print("Testing local model and dataset loading...")
 
-    test_cid = "0"  # Use any existing client folder under data/clients_data/
+    test_cid = "1"  # Use any existing client folder under data/clients_data/
     trainset, testset = load_data(test_cid)
 
     print(f"Loaded trainset size: {len(trainset)}")

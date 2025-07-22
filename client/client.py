@@ -6,14 +6,12 @@ import sys
 import os
 import warnings
 import logging
+import json
 
-# Suppress deprecation warnings from Flower
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-# Device config
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# Setup logger for each client
 def get_logger(cid):
     logger = logging.getLogger(f"Satellite_{cid}")
     handler = logging.StreamHandler()
@@ -25,8 +23,10 @@ def get_logger(cid):
 
 class SatelliteClient(fl.client.NumPyClient):
     def __init__(self, cid):
-        self.cid = cid
-        self.logger = get_logger(cid)
+        self.cid = os.environ.get("CLIENT_ID")
+        self.cid = f"satellite_{self.cid}"
+
+        self.logger = get_logger(self.cid)
         self.logger.info("Satellite client initialized")
 
         self.model = Net().to(DEVICE)
@@ -34,7 +34,6 @@ class SatelliteClient(fl.client.NumPyClient):
         self.trainloader = DataLoader(self.trainset, batch_size=32, shuffle=True)
         self.testloader = DataLoader(self.testset, batch_size=32)
 
-        #  Create a status file for logging
         self.status_file = f"/app/shared_logs/satellite_{cid}.txt"
         self.update_status("Initialized")
 
@@ -42,7 +41,17 @@ class SatelliteClient(fl.client.NumPyClient):
         with open(self.status_file, "w") as f:
             f.write(msg)
 
+    def is_visible(self, round_num):
+        schedule_path = "visibility/visibility_schedule.json"
+        if not os.path.exists(schedule_path):
+            return True  # if schedule doesn't exist, always visible
 
+        with open(schedule_path, "r") as f:
+            visibility = json.load(f)
+
+        round_key = f"round_{int(round_num)}"
+        allowed = visibility.get(round_key, [])
+        return self.cid in allowed
 
     def get_parameters(self, config):
         return [val.cpu().numpy() for val in self.model.state_dict().values()]
@@ -54,30 +63,42 @@ class SatelliteClient(fl.client.NumPyClient):
         self.model.load_state_dict(state_dict, strict=True)
 
     def fit(self, parameters, config):
-        self.logger.info("Training started for new round")
+        current_round = int(config.get("server_round", 1))
+        self.logger.info(f"Config received: {config}")
 
-        # Update status to "Training"
+        if not self.is_visible(current_round):
+            self.logger.info(f"Skipping round {current_round} (not visible)")
+            self.update_status(f"Skipped round {current_round}")
+            return self.get_parameters(config={}), 0, {}
+
+        self.logger.info(f"Training for round {current_round}")
         self.update_status("Training")
-
         self.set_parameters(parameters)
         train(self.model, self.trainloader, epochs=3, device=DEVICE)
         self.logger.info("Training completed")
+        self.update_status("Trained")
         return self.get_parameters(config={}), len(self.trainset), {}
 
     def evaluate(self, parameters, config):
+        current_round = int(config.get("server_round", 1))
+        self.logger.info(f"Config received: {config}")
+
+        if not self.is_visible(current_round):
+            self.logger.info(f"Skipping eval in round {current_round} (not visible)")
+            self.update_status(f"Skipped eval round {current_round}")
+            return 0.0, 0, {"accuracy": 0.0}
+
         self.set_parameters(parameters)
-
-        # Update status to "Evaluating"
         self.update_status("Evaluating")
-
         acc = test(self.model, self.testloader, device=DEVICE)
         self.logger.info(f"Evaluation completed. Accuracy: {acc:.4f}")
-        
-        # Update status to "Done"
         self.update_status("Done")
-
         return float(1.0 - acc), len(self.testset), {"accuracy": float(acc)}
 
 if __name__ == "__main__":
     cid = os.environ.get("CLIENT_ID", "0")
-    fl.client.start_numpy_client(server_address="server:8080", client=SatelliteClient(cid))
+    fl.client.start_client(
+        server_address="server:8080",
+        client=SatelliteClient(cid).to_client()
+    )
+

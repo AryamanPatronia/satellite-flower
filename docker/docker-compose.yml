@@ -9,9 +9,10 @@ services:
     container_name: fl_server
     ports:
       - "8080:8080"
+    volumes:
+      - ../shared_logs:/app/shared_logs
+      - ../visibility:/app/visibility
 
-# Satellite clients for federated learning
-  
   client_1:
     build:
       context: ..
@@ -24,6 +25,7 @@ services:
       - server
     volumes:
       - ../shared_logs:/app/shared_logs
+      - ../visibility:/app/visibility
 
   client_2:
     build:
@@ -37,6 +39,7 @@ services:
       - server
     volumes:
       - ../shared_logs:/app/shared_logs
+      - ../visibility:/app/visibility
 
   client_3:
     build:
@@ -50,6 +53,7 @@ services:
       - server
     volumes:
       - ../shared_logs:/app/shared_logs
+      - ../visibility:/app/visibility
 
   client_4:
     build:
@@ -63,6 +67,7 @@ services:
       - server
     volumes:
       - ../shared_logs:/app/shared_logs
+      - ../visibility:/app/visibility
 
   client_5:
     build:
@@ -76,10 +81,8 @@ services:
       - server
     volumes:
       - ../shared_logs:/app/shared_logs
+      - ../visibility:/app/visibility
 
-
-
-# Dashboard service to monitor the training process
   dashboard:
     build:
       context: ..
@@ -94,6 +97,7 @@ services:
       - client_5
     volumes:
       - ../shared_logs:/app/shared_logs
+      - ../visibility:/app/visibility
     tty: true
     entrypoint: tail -f /dev/null  # Prevent auto-running dashboard in log stream
 
