@@ -1,113 +1,81 @@
 import flwr as fl
-import warnings
+from flwr.server.strategy import FedAvg
+from flwr.server.client_proxy import ClientProxy
+from typing import List, Optional, Tuple
 import logging
-import os
 import json
+import os
 
+import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='[Server] %(message)s'
-)
-logger = logging.getLogger("server")
 
-class VisibleClientFedAvg(fl.server.strategy.FedAvg):
-    def __init__(self, visibility_schedule_path, **kwargs):
-        super().__init__(**kwargs)
-        self.visibility_schedule_path = visibility_schedule_path
+class VisibleClientFedAvg(FedAvg):
+    def __init__(self, visibility_path: str, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.visibility_path = visibility_path
+        self.visibility_schedule = {}
+        self.logger = logging.getLogger("Server")
 
-    def configure_fit(self, server_round, parameters, client_manager):
-        # Load visibility schedule
-        try:
-            with open(self.visibility_schedule_path, "r") as f:
-                schedule = json.load(f)
-        except FileNotFoundError:
-            logger.warning("Visibility schedule not found, using all clients.")
-            return super().configure_fit(server_round, parameters, client_manager)
+        self.logger.info(f"Visibility schedule path: {visibility_path}")
+        if os.path.exists(visibility_path):
+            with open(visibility_path, "r") as f:
+                self.visibility_schedule = json.load(f)
+                self.logger.info("Visibility schedule exists")
+                self.logger.info(f"Loaded schedule with {len(self.visibility_schedule)} rounds")
+        else:
+            self.logger.warning("No visibility schedule found. All clients will be used.")
 
-        round_key = f"round_{server_round}"
-        allowed_ids = set(schedule.get(round_key, []))
+    def _get_visible_ids(self, rnd: int) -> List[str]:
+        key = f"round_{rnd}"
+        return self.visibility_schedule.get(key, [])
 
-        available_clients = list(client_manager.all().values())
-        visible_clients = [c for c in available_clients if c.cid in allowed_ids]
+def configure_fit(
+    self,
+    server_round: int,
+    parameters,
+    client_manager,
+):
+    all_clients = list(client_manager.all().values())
+    allowed_ids = self._get_visible_ids(server_round)
+    visible_clients = [c for c in all_clients if c.cid in allowed_ids]
 
-        if not visible_clients:
-            logger.warning(f"No visible clients for round {server_round}, using all clients.")
-            visible_clients = available_clients
+    self.logger.debug(f"[ROUND {server_round}] Allowed IDs: {set(allowed_ids)}")
+    self.logger.debug(f"[ROUND {server_round}] Available client IDs: {[c.cid for c in all_clients]}")
 
-        config = {"server_round": server_round}
-        # Return a list of (client, FitIns)
-        return [
-            (client, fl.common.FitIns(parameters, config))
-            for client in visible_clients
-        ]
+    if not visible_clients:
+        self.logger.warning(f"No visible clients for round {server_round}, using all clients.")
+        visible_clients = all_clients
 
-    def configure_evaluate(self, server_round, parameters, client_manager):
-        try:
-            with open(self.visibility_schedule_path, "r") as f:
-                schedule = json.load(f)
-        except FileNotFoundError:
-            logger.warning("Visibility schedule not found, using all clients.")
-            return super().configure_evaluate(server_round, parameters, client_manager)
+    return super().configure_fit(server_round, parameters, client_manager)
 
-        round_key = f"round_{server_round}"
-        allowed_ids = set(schedule.get(round_key, []))
 
-        available_clients = list(client_manager.all().values())
-        visible_clients = [c for c in available_clients if c.cid in allowed_ids]
-
-        if not visible_clients:
-            logger.warning(f"No visible clients for round {server_round}, using all clients.")
-            visible_clients = available_clients
-
-        config = {"server_round": server_round}
-        return [
-            (client, fl.common.EvaluateIns(parameters, config))
-            for client in visible_clients
-        ]
-
-    def aggregate_fit(self, server_round, results, failures):
-        filtered_results = [
-            (client, fit_res)
-            for client, fit_res in results
-            if getattr(fit_res, "num_examples", 0) > 0
-        ]
-        if not filtered_results:
-            logger.warning(f"No clients contributed training examples in round {server_round}. Skipping aggregation.")
-            return None, {}
-        return super().aggregate_fit(server_round, filtered_results, failures)
-
-    def aggregate_evaluate(self, server_round, results, failures):
-        filtered_results = [
-            (client, eval_res)
-            for client, eval_res in results
-            if getattr(eval_res, "num_examples", 0) > 0
-        ]
-        if not filtered_results:
-            logger.warning(f"No clients contributed evaluation examples in round {server_round}. Skipping evaluation aggregation.")
-            return None
-        return super().aggregate_evaluate(server_round, filtered_results, failures)
+    def configure_evaluate(
+        self,
+        rnd: int,
+        parameters,
+        client_manager,
+    ) -> List[Tuple[ClientProxy, dict]]:
+        return super().configure_evaluate(rnd, parameters, client_manager=client_manager)
 
 def main():
-    logger.info("Starting Flower server...")
-
-    num_rounds = int(os.environ.get("NUM_ROUNDS", "10"))
-
     strategy = VisibleClientFedAvg(
-        visibility_schedule_path="/app/visibility/visibility_schedule.json",
+        visibility_path="/app/visibility/visibility_schedule.json",
         fraction_fit=1.0,
-        min_fit_clients=1,
-        min_available_clients=1,
+        fraction_evaluate=1.0,
+        min_fit_clients=2,
+        min_evaluate_clients=2,
+        min_available_clients=2,
+        on_fit_config_fn=lambda rnd: {"server_round": rnd},
+        on_evaluate_config_fn=lambda rnd: {"server_round": rnd},
     )
 
     fl.server.start_server(
-        server_address="0.0.0.0:8080",
-        config=fl.server.ServerConfig(num_rounds=num_rounds),
+        server_address="[::]:8080",
+        config=fl.server.ServerConfig(num_rounds=10),
         strategy=strategy,
     )
 
-    logger.info("Server finished training.")
-
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO, format="[Server] %(message)s")
     main()

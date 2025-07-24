@@ -2,7 +2,6 @@ import flwr as fl
 import torch
 from train import Net, load_data, train, test
 from torch.utils.data import DataLoader
-import sys
 import os
 import warnings
 import logging
@@ -23,9 +22,7 @@ def get_logger(cid):
 
 class SatelliteClient(fl.client.NumPyClient):
     def __init__(self, cid):
-        self.cid = os.environ.get("CLIENT_ID")
-        self.cid = f"satellite_{self.cid}"
-
+        self.cid = f"satellite_{cid}"
         self.logger = get_logger(self.cid)
         self.logger.info("Satellite client initialized")
 
@@ -42,9 +39,9 @@ class SatelliteClient(fl.client.NumPyClient):
             f.write(msg)
 
     def is_visible(self, round_num):
-        schedule_path = "visibility/visibility_schedule.json"
+        schedule_path = "/app/visibility/visibility_schedule.json"
         if not os.path.exists(schedule_path):
-            return True  # if schedule doesn't exist, always visible
+            return True
 
         with open(schedule_path, "r") as f:
             visibility = json.load(f)
@@ -96,9 +93,9 @@ class SatelliteClient(fl.client.NumPyClient):
         return float(1.0 - acc), len(self.testset), {"accuracy": float(acc)}
 
 if __name__ == "__main__":
-    cid = os.environ.get("CLIENT_ID", "0")
+    cid = os.environ.get("CLIENT_ID", "1")
+    client = SatelliteClient(cid)
     fl.client.start_client(
         server_address="server:8080",
-        client=SatelliteClient(cid).to_client()
+        client=client,
     )
-
