@@ -12,6 +12,7 @@ services:
     volumes:
       - ../shared_logs:/app/shared_logs
       - ../visibility:/app/visibility
+      - ../results:/app/results
 
   client_1:
     build:

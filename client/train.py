@@ -33,7 +33,7 @@ def load_data(client_id):
 
 def train(model, train_loader, epochs, device):
     model.train()
-    optimizer = torch.optim.SGD(model.parameters(), lr=0.001)
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.01) #<-- I will change this...
     for epoch in range(epochs):  # <-- FIXED here
         for x, y in train_loader:
             x, y = x.to(device), y.to(device)
@@ -55,7 +55,7 @@ def test(model, test_loader, device):
             total += len(y)
     return correct / total
 
-
+# Main function to test the local model and dataset loading
 if __name__ == "__main__":
     print("Testing local model and dataset loading...")
 
@@ -71,3 +71,15 @@ if __name__ == "__main__":
     print(f"Sample label: {sample_y}")
     print("Model architecture:")
     print(model)
+
+    # TEST
+    DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model.to(DEVICE)
+
+    trainloader = DataLoader(trainset, batch_size=32, shuffle=True)
+    testloader = DataLoader(testset, batch_size=32)
+
+    train(model, trainloader, epochs=10, device=DEVICE) # Will change to 10 for better accuracy....
+    accuracy = test(model, testloader, device=DEVICE)
+    print(f"Local test accuracy after training: {accuracy:.4f}")
+

@@ -1,0 +1,36 @@
+{
+  "round_1": ["satellite_1", "satellite_2", "satellite_3", "satellite_4", "satellite_5"],
+  "round_2": ["satellite_1", "satellite_2", "satellite_3", "satellite_4", "satellite_5"],
+  "round_3": ["satellite_1", "satellite_2", "satellite_3", "satellite_4", "satellite_5"],
+  "round_4": ["satellite_1", "satellite_2", "satellite_3", "satellite_4", "satellite_5"],
+  "round_5": ["satellite_1", "satellite_2", "satellite_3", "satellite_4", "satellite_5"],
+  "round_6": ["satellite_1", "satellite_2", "satellite_3", "satellite_4", "satellite_5"],
+  "round_7": ["satellite_1", "satellite_2", "satellite_3", "satellite_4", "satellite_5"],
+  "round_8": ["satellite_1", "satellite_2", "satellite_3", "satellite_4", "satellite_5"],
+  "round_9": ["satellite_1", "satellite_2", "satellite_3", "satellite_4", "satellite_5"],
+  "round_10": ["satellite_1", "satellite_2", "satellite_3", "satellite_4", "satellite_5"],
+  "round_11": ["satellite_1", "satellite_2", "satellite_3", "satellite_4", "satellite_5"],
+  "round_12": ["satellite_1", "satellite_2", "satellite_3", "satellite_4", "satellite_5"],
+  "round_13": ["satellite_1", "satellite_2", "satellite_3", "satellite_4", "satellite_5"],
+  "round_14": ["satellite_1", "satellite_2", "satellite_3", "satellite_4", "satellite_5"],
+  "round_15": ["satellite_1", "satellite_2", "satellite_3", "satellite_4", "satellite_5"],
+  "round_16": ["satellite_1", "satellite_2", "satellite_3", "satellite_4", "satellite_5"],
+  "round_17": ["satellite_1", "satellite_2", "satellite_3", "satellite_4", "satellite_5"],
+  "round_18": ["satellite_1", "satellite_2", "satellite_3", "satellite_4", "satellite_5"],
+  "round_19": ["satellite_1", "satellite_2", "satellite_3", "satellite_4", "satellite_5"],
+  "round_20": ["satellite_1", "satellite_2", "satellite_3", "satellite_4", "satellite_5"],
+  "round_21": ["satellite_1", "satellite_2", "satellite_3", "satellite_4", "satellite_5"],
+  "round_22": ["satellite_1", "satellite_2", "satellite_3", "satellite_4", "satellite_5"],
+  "round_23": ["satellite_1", "satellite_2", "satellite_3", "satellite_4", "satellite_5"],
+  "round_24": ["satellite_1", "satellite_2", "satellite_3", "satellite_4", "satellite_5"],
+  "round_25": ["satellite_1", "satellite_2", "satellite_3", "satellite_4", "satellite_5"],
+  "round_26": ["satellite_1", "satellite_2", "satellite_3", "satellite_4", "satellite_5"],
+  "round_27": ["satellite_1", "satellite_2", "satellite_3", "satellite_4", "satellite_5"],
+  "round_28": ["satellite_1", "satellite_2", "satellite_3", "satellite_4", "satellite_5"],
+  "round_29": ["satellite_1", "satellite_2", "satellite_3", "satellite_4", "satellite_5"],
+  "round_30": ["satellite_1", "satellite_2", "satellite_3", "satellite_4", "satellite_5"]
+}
+
+
+
+This is the default setup for the visibility schedule where for all the 30 federated rounds all the satellites are visible.

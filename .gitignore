@@ -1,2 +1,17 @@
-shared_logs/
+# Ignore everything inside shared_logs except the folder itself
+shared_logs/*
+!shared_logs/.gitkeep
+
+
+# This folder has contains the files like satellite_1.txt, satellite_2.txt, etc.
+# which are generated during the simulation.
+# We want to ignore these files but keep the folder.
+
+
+# Ignore everything inside data except the folder itself
+# This folder contains the dataset used for training and testing.
+# We want to ignore the files but keep the folder.
+# So when the repository is cloned, the folder exists but is empty and data is downloaded during setup.
+data/*
+!data/.gitkeep
 

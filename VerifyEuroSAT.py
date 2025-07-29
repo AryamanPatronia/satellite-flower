@@ -1,29 +1,23 @@
 import torch
 import os
-import matplotlib.pyplot as plt
-import torchvision.transforms.functional as TF
 
-# Check any client's (satallite) if it is carrying the EuroSAT data.
-CLIENT_ID = "5"
-DATA_DIR = f"data/clients_data/client_{CLIENT_ID}"
+NUM_CLIENTS = 5  
 
-# Load tensors
-x_path = os.path.join(DATA_DIR, "x_train.pt")
-y_path = os.path.join(DATA_DIR, "y_train.pt")
+for client_id in range(1, NUM_CLIENTS + 1):
+    data_dir = f"data/clients_data/client_{client_id}"
+    x_path = os.path.join(data_dir, "x_train.pt")
+    y_path = os.path.join(data_dir, "y_train.pt")
 
-x = torch.load(x_path)
-y = torch.load(y_path)
+    if not os.path.exists(x_path) or not os.path.exists(y_path):
+        print(f"[!] Data missing for client_{client_id}")
+        continue
 
-print(f"Loaded x_train shape: {x.shape}") 
-print(f"Loaded y_train shape: {y.shape}")
-print(f"Unique labels: {torch.unique(y)}")
-print(f"Pixel value range: min={x.min().item()}, max={x.max().item()}")
+    x = torch.load(x_path)
+    y = torch.load(y_path)
 
-# Show first image
-img = x[0]
-label = y[0].item()
-
-plt.imshow(TF.to_pil_image(img))
-plt.title(f"Client {CLIENT_ID} - Label: {label}")
-plt.axis('off')
-plt.show()
+    print(f"Client {client_id}:")
+    print(f"  x_train shape: {x.shape}")
+    print(f"  y_train shape: {y.shape}")
+    print(f"  Unique labels: {torch.unique(y).tolist()}")
+    print(f"  Pixel value range: min={x.min().item():.3f}, max={x.max().item():.3f}")
+    print("-" * 40)

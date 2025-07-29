@@ -44,3 +44,4 @@ torchvision==0.22.1
 typer==0.12.5
 typing_extensions==4.14.1
 urllib3==2.5.0
+
