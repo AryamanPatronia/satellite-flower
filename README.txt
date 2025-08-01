@@ -7,7 +7,6 @@ This is an essential step to do before the running the simulations.
 
 Step 2: Make sure that docker is running in the background before you start the simulation.
 
-
-Step 3: Navigate to the root folder and run "./start_all.sh"...
+** This project is still work in progress **
 
 Right now this setup is ONLY for MacOS users.

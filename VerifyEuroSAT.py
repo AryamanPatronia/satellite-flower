@@ -21,3 +21,6 @@ for client_id in range(1, NUM_CLIENTS + 1):
     print(f"  Unique labels: {torch.unique(y).tolist()}")
     print(f"  Pixel value range: min={x.min().item():.3f}, max={x.max().item():.3f}")
     print("-" * 40)
+
+
+# This script checks the data integrity for each client in a federated learning setup.

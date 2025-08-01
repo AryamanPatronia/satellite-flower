@@ -34,3 +34,4 @@
 
 
 This is the default setup for the visibility schedule where for all the 30 federated rounds all the satellites are visible.
+There is no constellation, just saving this in case I need to test something...

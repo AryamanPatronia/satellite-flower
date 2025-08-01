@@ -13,6 +13,8 @@ services:
       - ../shared_logs:/app/shared_logs
       - ../visibility:/app/visibility
       - ../results:/app/results
+    logging:
+      driver: "json-file"
 
   client_1:
     build:
