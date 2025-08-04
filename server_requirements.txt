@@ -1,3 +1,5 @@
 flwr
 matplotlib
 scipy>=1.10.0
+torch 
+torchvision

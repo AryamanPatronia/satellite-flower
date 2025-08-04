@@ -33,8 +33,8 @@ def load_data(client_id):
 
 def train(model, train_loader, epochs, device):
     model.train()
-    optimizer = torch.optim.SGD(model.parameters(), lr=0.01) #<-- I will change this...
-    for epoch in range(epochs):  # <-- FIXED here
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.003, momentum=0.9, weight_decay=1e-4) # <-- I will change this...
+    for epoch in range(epochs):  
         for x, y in train_loader:
             x, y = x.to(device), y.to(device)
             optimizer.zero_grad()
@@ -79,7 +79,7 @@ if __name__ == "__main__":
     trainloader = DataLoader(trainset, batch_size=32, shuffle=True)
     testloader = DataLoader(testset, batch_size=32)
 
-    train(model, trainloader, epochs=10, device=DEVICE) # Will change to 10 for better accuracy....
+    train(model, trainloader, epochs=10, device=DEVICE) # Will change to 5 for better accuracy....
     accuracy = test(model, testloader, device=DEVICE)
     print(f"Local test accuracy after training: {accuracy:.4f}")
 

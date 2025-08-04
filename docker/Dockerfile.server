@@ -2,9 +2,15 @@ FROM python:3.10-slim
 
 WORKDIR /app
 
+# Copy all server logic
 COPY server/ ./server/
-COPY server_requirements.txt .
+COPY server/server_FedAsync.py .
+COPY server/server_FedAvg.py .
 
+
+# Dependencies
+COPY server_requirements.txt .
 RUN pip install --no-cache-dir -r server_requirements.txt
 
-CMD ["python", "server/server.py"]
+# This line dynamically runs the right server file
+CMD ["sh", "-c", "python server_${SERVER_TYPE}.py"]

@@ -9,12 +9,16 @@ services:
     container_name: fl_server
     ports:
       - "8080:8080"
+    environment:
+      - SERVER_TYPE=${SERVER_TYPE}
+      - RESULTS_DIR=${RESULTS_DIR}
     volumes:
       - ../shared_logs:/app/shared_logs
       - ../visibility:/app/visibility
       - ../results:/app/results
     logging:
       driver: "json-file"
+
 
   client_1:
     build:
