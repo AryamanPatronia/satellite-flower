@@ -15,6 +15,7 @@ services:
     volumes:
       - ../shared_logs:/app/shared_logs
       - ../visibility:/app/visibility
+      - ../data/central_testset:/app/data/central_testset  # Just making a change...
       - ../results:/app/results
     logging:
       driver: "json-file"

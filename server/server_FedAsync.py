@@ -1,168 +1,155 @@
-import flwr as fl
-from flwr.common import FitIns, EvaluateIns, GetParametersIns
-from flwr.server.client_proxy import ClientProxy
-from flwr.server.strategy import Strategy
-from typing import Dict, List, Optional, Tuple
-import logging
-import json
+# server_FedAsync.py
 import os
-import matplotlib.pyplot as plt
-import warnings
 import time
+import json
+import torch
+import logging
 import numpy as np
+from typing import Dict, List
+from torch.utils.data import DataLoader, TensorDataset
+import matplotlib.pyplot as plt
 from scipy.interpolate import make_interp_spline
+import flwr as fl
+from flwr.common import FitIns, GetParametersIns
+from flwr.server.strategy import Strategy
+import sys
 
-warnings.filterwarnings("ignore", category=DeprecationWarning)
+sys.path.append("/app/client")
+from train import Net
 
 class FedAsyncStrategy(Strategy):
     def __init__(self, visibility_path: str):
-        self.visibility_path = visibility_path
-        self.visibility_schedule = {}
         self.logger = logging.getLogger("Server")
+        self.visibility_path = visibility_path
+        self.visibility_schedule = self._load_schedule()
         self.current_weights = None
         self.client_staleness: Dict[str, int] = {}
         self.round_accuracies = []
         self.round_times = []
-        self.client_id_map = {}  # Maps UUID -> satellite_X
+        self.client_id_map = {}
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.global_testset = self._load_global_testset()
 
-        self.logger.info(f"Visibility schedule path: {visibility_path}")
-        if os.path.exists(visibility_path):
-            with open(visibility_path, "r") as f:
-                self.visibility_schedule = json.load(f)
-                self.logger.info("Visibility schedule exists")
-                self.logger.info(f"Loaded schedule with {len(self.visibility_schedule)} rounds")
-        else:
-            self.logger.warning("No visibility schedule found. All clients will be used.")
+    def _load_schedule(self):
+        self.logger.info(f"Visibility schedule path: {self.visibility_path}")
+        if os.path.exists(self.visibility_path):
+            with open(self.visibility_path, "r") as f:
+                data = json.load(f)
+                self.logger.info(f"Loaded schedule with {len(data)} rounds")
+                return data
+        return {}
+
+    def _load_global_testset(self):
+        path = "/app/data/central_testset"
+        x_test = torch.load(os.path.join(path, "x.pt"))
+        y_test = torch.load(os.path.join(path, "y.pt"))
+        return DataLoader(TensorDataset(x_test, y_test), batch_size=32)
 
     def _get_visible_ids(self, rnd: int) -> List[str]:
-        key = f"round_{rnd}"
-        return self.visibility_schedule.get(key, [])
+        return self.visibility_schedule.get(f"round_{rnd}", [])
 
-    EXPECTED_CLIENTS = 5  # Expects 5 satellites to connect...
+    EXPECTED_CLIENTS = 5
 
     def initialize_parameters(self, client_manager):
-        self.logger.info("Waiting for all clients to connect before building client ID map")
+        self.logger.info("Waiting for all clients to connect...")
         waited = 0
         while len(client_manager.all()) < self.EXPECTED_CLIENTS:
             time.sleep(1)
             waited += 1
             if waited > 300:
-                raise RuntimeError(f"Not all clients connected after {waited} seconds")
+                raise RuntimeError(f"Only {len(client_manager.all())} clients connected after {waited}s")
 
-        sorted_clients = sorted(client_manager.all().items())
-        for idx, (uuid, _) in enumerate(sorted_clients, start=1):
-            self.client_id_map[uuid] = f"satellite_{idx}"
-        self.logger.info(f"Client ID Map: {self.client_id_map}")
+        # Try to use explicit client_id property if available, else fallback to satellite_X
+        for idx, (uuid, client_proxy) in enumerate(sorted(client_manager.all().items()), 1):
+            client_id = None
+            # Try to get explicit client_id property
+            if hasattr(client_proxy, "properties"):
+                client_id = client_proxy.properties.get("client_id", None)
+            if client_id is None:
+                client_id = f"satellite_{idx}"
+            self.client_id_map[uuid] = client_id
 
         client = list(client_manager.all().values())[0]
-        ins = GetParametersIns(config={})
-        res = client.get_parameters(ins, timeout=60, group_id="default")
+        res = client.get_parameters(GetParametersIns(config={}), timeout=60, group_id="default")
         return res.parameters
 
     def configure_fit(self, server_round, parameters, client_manager):
         all_clients = list(client_manager.all().values())
-
         allowed_ids = self._get_visible_ids(server_round)
-        self.logger.info(f"Allowed IDs for round {server_round}: {allowed_ids}")
-        self.logger.info(f"Connected UUIDs: {[c.cid for c in all_clients]}")
-
-        visible_clients = [
-            c for c in all_clients
-            if self.client_id_map.get(c.cid, "") in allowed_ids
-        ]
+        visible_clients = [c for c in all_clients if self.client_id_map.get(c.cid, "") in allowed_ids]
 
         if not visible_clients:
-            self.logger.warning(f"No visible clients for round {server_round}, skipping round.")
-            # Record a skipped round with default accuracy/time
+            self.logger.warning(f"[ROUND {server_round}] No visible clients, skipping.")
             self.round_accuracies.append(0.0)
             self.round_times.append(server_round * 4)
-            # Return empty list to skip the round
             return []
 
         for client in visible_clients:
             self.client_staleness.setdefault(client.cid, 0)
 
-        self.logger.info(
-            f"[ROUND {server_round}] Training on satellites: {[self.client_id_map.get(c.cid, '') for c in visible_clients]}"
-        )
-
-        return [
-            (client, FitIns(parameters, {"server_round": server_round}))
-            for client in visible_clients
-        ]
+        self.logger.info(f"[ROUND {server_round}] Training on: {[self.client_id_map[c.cid] for c in visible_clients]}")
+        return [(client, FitIns(parameters, {"server_round": server_round})) for client in visible_clients]
 
     def aggregate_fit(self, server_round, results, failures):
-        # No need to append here, handled in configure_fit for skipped rounds
         if not results:
             return self.current_weights, {}
 
         for client, fit_res in results:
             staleness = self.client_staleness.get(client.cid, 0)
-            alpha = 1.0 / ((staleness + 1) ** 1.5)  # Stronger staleness decay
-
+            alpha = np.exp(-staleness)  # Soft max with staleness...
             client_weights = fl.common.parameters_to_ndarrays(fit_res.parameters)
+
             if self.current_weights is None:
                 self.current_weights = client_weights
             else:
+                momentum = 0.9
                 self.current_weights = [
-                    (1 - alpha) * cw + alpha * lw for cw, lw in zip(self.current_weights, client_weights)
+                    momentum * cw + (1 - momentum) * lw for cw, lw in zip(self.current_weights, client_weights)
                 ]
-
             self.client_staleness[client.cid] = 0
 
         for cid in self.client_staleness:
             if cid not in [c.cid for c, _ in results]:
                 self.client_staleness[cid] += 1
 
+        acc, _ = self.evaluate(server_round, fl.common.ndarrays_to_parameters(self.current_weights))
+        self.round_accuracies.append(acc)
+        self.round_times.append(server_round * 4)
+        self.logger.info(f"[ROUND {server_round}] Central Eval Accuracy: {acc:.4f}")
         return fl.common.ndarrays_to_parameters(self.current_weights), {}
 
     def configure_evaluate(self, server_round, parameters, client_manager):
-        all_clients = list(client_manager.all().values())
-        allowed_ids = self._get_visible_ids(server_round)
-        visible_clients = [
-            c for c in all_clients
-            if self.client_id_map.get(c.cid, "") in allowed_ids
-        ]
-        return [
-            (client, EvaluateIns(parameters, {"server_round": server_round}))
-            for client in visible_clients
-        ]
-
-    def aggregate_evaluate(self, server_round, results, failures):
-        if not results:
-            self.round_accuracies.append(0.0)
-            self.round_times.append(server_round * 4)
-            self.logger.warning(f"[ROUND {server_round}] No evaluation results, defaulting to 0.0 accuracy")
-            return 0.0, {"accuracy": 0.0}
-
-        losses = [r.loss for _, r in results]
-        examples = [r.num_examples for _, r in results]
-        accs = [r.metrics.get("accuracy", 0.0) for _, r in results]
-        total_examples = sum(examples)
-        if total_examples == 0:
-            self.logger.warning(f"[ROUND {server_round}] No examples returned, defaulting to 0.0 accuracy/loss")
-            self.round_accuracies.append(0.0)
-            self.round_times.append(server_round * 4)
-            return 0.0, {"accuracy": 0.0}
-
-        weighted_loss = sum(loss * n for loss, n in zip(losses, examples)) / total_examples
-        weighted_acc = sum(acc * n for acc, n in zip(accs, examples)) / total_examples
-
-        self.round_accuracies.append(weighted_acc)
-        self.round_times.append(server_round * 4)
-        self.logger.info(f"[ROUND {server_round}] Async Aggregated Accuracy: {weighted_acc:.4f}")
-        return weighted_loss, {"accuracy": weighted_acc}
+        return []
 
     def evaluate(self, server_round: int, parameters):
-        return None
+        if self.current_weights is None:
+            return 0.0, {}
+
+        model = Net().to(self.device)
+        ndarrays = fl.common.parameters_to_ndarrays(parameters)
+        state_dict = dict(zip(model.state_dict().keys(), [torch.tensor(w) for w in ndarrays]))
+        model.load_state_dict(state_dict, strict=True)
+
+        model.eval()
+        correct, total = 0, 0
+        with torch.no_grad():
+            for x, y in self.global_testset:
+                x, y = x.to(self.device), y.to(self.device)
+                pred = model(x).argmax(dim=1)
+                correct += (pred == y).sum().item()
+                total += y.size(0)
+
+        return correct / total, {}
+
+    def aggregate_evaluate(self, server_round, results, failures):
+        return 0.0, {"accuracy": 0.0}
 
     def plot_accuracy_chart(self):
-        if not self.round_accuracies or not self.round_times:
-            self.logger.warning("No accuracy/time data to plot.")
+        if not self.round_accuracies:
             return
 
-        strategy_name = os.environ.get("SERVER_TYPE", "FedAsync") 
-        results_dir = os.path.join("/app/results", f"results_{strategy_name}")
+        strategy_name = os.environ.get("SERVER_TYPE", "FedAsync")
+        results_dir = os.path.join("results", f"results_{strategy_name}")
         os.makedirs(results_dir, exist_ok=True)
 
         x = np.array(self.round_times)
@@ -170,45 +157,37 @@ class FedAsyncStrategy(Strategy):
 
         if len(x) > 3:
             x_smooth = np.linspace(x.min(), x.max(), 300)
-            spline = make_interp_spline(x, y, k=3)
-            y_smooth = spline(x_smooth)
+            y_smooth = make_interp_spline(x, y, k=3)(x_smooth)
         else:
             x_smooth, y_smooth = x, y
 
         plt.figure(figsize=(10, 6), dpi=200)
-        plt.plot(x_smooth, y_smooth, color='green', linewidth=2.5, label=f"{strategy_name} (smoothed)")
-        plt.scatter(x, y, color='orange', s=40, zorder=5, label="Actual Rounds")
+        plt.plot(x_smooth, y_smooth, label=f"{strategy_name} (smoothed)", linewidth=2.5)
+        plt.scatter(x, y, color='orange', label="Actual")
         plt.title(f"{strategy_name}: Global Accuracy vs. Simulated Time", fontsize=18, fontweight='bold')
         plt.xlabel("Simulated Time (hours)", fontsize=16)
         plt.ylabel("Accuracy", fontsize=16)
         plt.grid(True, linestyle='--', alpha=0.3)
-        plt.legend(fontsize=13)
+        plt.legend()
         plt.tight_layout()
-        plot_path = os.path.join(results_dir, f"{strategy_name}_accuracy_vs_time.png")
-        plt.savefig(plot_path, bbox_inches='tight', dpi=300)
-        plt.close()
-        self.logger.info(f"Saved {strategy_name} accuracy plot to {plot_path}")
 
-        # Save accuracy/time to JSON for external plotting
+        chart_path = os.path.join(results_dir, f"{strategy_name}_accuracy_vs_time.png")
         history_path = os.path.join(results_dir, "server_history.json")
+        plt.savefig(chart_path, dpi=300)
+
         with open(history_path, "w") as f:
-            json.dump({
-                "times": self.round_times,
-                "accuracies": self.round_accuracies,
-            }, f, indent=2)
-        self.logger.info(f"Saved training history to {history_path}")
+            json.dump({"times": self.round_times, "accuracies": self.round_accuracies}, f, indent=2)
+
+        self.logger.info(f"[✓] Saved chart to {chart_path}")
+        self.logger.info(f"[✓] Saved server history to {history_path}")
 
 def main():
-    strategy = FedAsyncStrategy(
-        visibility_path="/app/visibility/visibility_schedule.json"
-    )
-
-    history = fl.server.start_server(
+    strategy = FedAsyncStrategy("/app/visibility/visibility_schedule.json")
+    fl.server.start_server(
         server_address="[::]:8080",
-        config=fl.server.ServerConfig(num_rounds=30),
+        config=fl.server.ServerConfig(num_rounds=31),  # Adjusted to 31 rounds.. Because 0-indexed..
         strategy=strategy,
     )
-
     os.makedirs("results", exist_ok=True)
     strategy.plot_accuracy_chart()
 

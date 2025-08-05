@@ -5,6 +5,7 @@ import time
 import json
 
 CONSTELLATIONS = {
+    "baseline": "baseline.json", 
     "walker_star": "walker_star.json",
     "polar_sso": "polar_sso.json",
     "equatorial": "equatorial.json",

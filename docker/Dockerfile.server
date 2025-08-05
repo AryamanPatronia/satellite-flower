@@ -7,6 +7,10 @@ COPY server/ ./server/
 COPY server/server_FedAsync.py .
 COPY server/server_FedAvg.py .
 
+# new change for using testset, I am using the client directory to access the train.py file
+COPY ../client /app/client
+
+
 
 # Dependencies
 COPY server_requirements.txt .

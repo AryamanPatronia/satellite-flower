@@ -21,10 +21,18 @@ rm -rf data/raw
 echo "Downloading EuroSAT dataset..."
 python3 download_eurosat.py
 
+# Centralize the test set...
+echo "Centralizing test set..."
+python3 central_testset.py
 
+# Partition the dataset for clients...
+echo "Partitioning EuroSAT dataset for clients..."
 python3 partition_eurosat.py
 
-echo "Printing dataset stats for each client..."
+echo "Checking if the central test set is created..."
+python3 VerifyCentral.py
+
+echo "Checking if the client datasets are created..."
 python3 VerifyEuroSAT.py
 
 echo "Setup complete."

@@ -8,7 +8,8 @@ CONSTELLATION_FILES = {
     "polar_sso": "polar_sso.json",
     "equatorial": "equatorial.json",
     "inclined_sparse": "inclined_sparse.json",
-    "retrograde_polar": "retrograde_polar.json"
+    "retrograde_polar": "retrograde_polar.json",
+    "baseline": "baseline.json"
 }
 
 SATELLITE_IDS = [f"S{i}" for i in range(1, 6)]

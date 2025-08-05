@@ -33,15 +33,25 @@ def load_data(client_id):
 
 def train(model, train_loader, epochs, device):
     model.train()
-    optimizer = torch.optim.SGD(model.parameters(), lr=0.003, momentum=0.9, weight_decay=1e-4) # <-- I will change this...
-    for epoch in range(epochs):  
+    criterion = torch.nn.CrossEntropyLoss()
+    # Lower learning rate for smoother FedAvg...
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.0005, weight_decay=1e-5)
+    for epoch in range(epochs):
+        running_loss = 0.0
+        correct, total = 0, 0
         for x, y in train_loader:
             x, y = x.to(device), y.to(device)
             optimizer.zero_grad()
-            loss = F.cross_entropy(model(x), y)
+            outputs = model(x)
+            loss = criterion(outputs, y)
             loss.backward()
             optimizer.step()
-        print(f"Epoch {epoch + 1} loss: {loss.item():.4f}")
+            running_loss += loss.item()
+            _, predicted = outputs.max(1)
+            correct += predicted.eq(y).sum().item()
+            total += y.size(0)
+        acc = correct / total
+        print(f"Epoch {epoch+1}/{epochs}, Loss: {running_loss:.4f}, Accuracy: {acc:.4f}")
 
 
 def test(model, test_loader, device):
@@ -79,7 +89,8 @@ if __name__ == "__main__":
     trainloader = DataLoader(trainset, batch_size=32, shuffle=True)
     testloader = DataLoader(testset, batch_size=32)
 
-    train(model, trainloader, epochs=10, device=DEVICE) # Will change to 5 for better accuracy....
+    # Using 1 epoch for FedAvg...
+    train(model, trainloader, epochs=1, device=DEVICE)
     accuracy = test(model, testloader, device=DEVICE)
     print(f"Local test accuracy after training: {accuracy:.4f}")
 

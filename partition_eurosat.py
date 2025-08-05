@@ -1,7 +1,7 @@
 import torch
 import os
 from torchvision.datasets import EuroSAT
-from torchvision.transforms import ToTensor
+from torchvision import transforms
 from torch.utils.data import Subset
 import random
 from collections import defaultdict
@@ -11,12 +11,25 @@ SAMPLES_PER_CLIENT = 5000
 CLASSES_PER_CLIENT = 4  # Overlap: each client gets 4 classes
 
 def partition_dataset():
-    dataset = EuroSAT(root="data/raw", download=False, transform=ToTensor())
+    transform = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.3444, 0.3809, 0.4082], std=[0.1859, 0.1556, 0.1349])
+    ])
+    dataset = EuroSAT(root="data/raw", download=False, transform=transform)
+
+    # Load central test indices
+    central_test_indices_path = "data/central_testset/indices.pt"
+    if os.path.exists(central_test_indices_path):
+        central_test_indices = set(torch.load(central_test_indices_path))
+    else:
+        central_test_indices = set()
 
     # Group indices by class
     class_to_indices = defaultdict(list)
+    # When building class_to_indices:
     for idx, (_, label) in enumerate(dataset):
-        class_to_indices[label].append(idx)
+        if idx not in central_test_indices:
+            class_to_indices[label].append(idx)
 
     os.makedirs("data/clients_data", exist_ok=True)
 

@@ -7,6 +7,8 @@ import warnings
 import logging
 import json
 
+import socket # For checking server availability
+
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -91,11 +93,31 @@ class SatelliteClient(fl.client.NumPyClient):
         self.logger.info(f"Evaluation completed. Accuracy: {acc:.4f}")
         self.update_status("Done")
         return float(1.0 - acc), len(self.testset), {"accuracy": float(acc)}
+    
+    @staticmethod
+    def wait_for_server(server_address):
+        host, port = server_address.split(":")
+        port = int(port)
+        print(f"[Client] Waiting for server {host}:{port} to be available...")
+        while True:
+            try:
+                with socket.create_connection((host, port), timeout=2):
+                    print("[Client] Server is ready.")
+                    break
+            except OSError:
+                print("[Client] Server not ready yet, retrying in 2s...")
+                import time
+                time.sleep(2)
 
 if __name__ == "__main__":
     cid = os.environ.get("CLIENT_ID", "1")
+    server_address = os.environ.get("SERVER_ADDRESS", "server:8080")
+    
+    # Wait for gRPC server to become available
+    SatelliteClient.wait_for_server(server_address)
+
     client = SatelliteClient(cid)
     fl.client.start_client(
-        server_address="server:8080",
+        server_address=server_address,
         client=client,
     )
