@@ -15,3 +15,13 @@ shared_logs/*
 data/*
 !data/.gitkeep
 
+
+# Ignore everything inside constellations except the folder itself...
+constellations/*
+!constellations/.gitkeep
+
+
+# Ignore everything inside CMaps except the folder itself
+CMaps/*
+!CMaps/.gitkeep
+

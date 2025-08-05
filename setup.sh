@@ -29,15 +29,24 @@ python3 central_testset.py
 echo "Partitioning EuroSAT dataset for clients..."
 python3 partition_eurosat.py
 
+# Create the constellation files...
+echo "Creating constellation files..."
+python3 constellation_maker.py
+
+#Create cluster maps...
+echo "Creating cluster maps..."
+python3 generate_cluster_maps.py
+
+
+# Verify the setup...
 echo "Checking if the central test set is created..."
 python3 VerifyCentral.py
 
+# Check if and how the client datasets are created...
 echo "Checking if the client datasets are created..."
 python3 VerifyEuroSAT.py
 
 echo "Setup complete."
 echo "Make sure docker is running in the background."
-echo "You can now run the simulation using:"
-echo "    ./start_all.sh"
-echo ""
 
+echo "You can now try ./start_FedAsync.sh or ./start_FedAvg.sh to start Federated Learning in Satellite Constellations..."
