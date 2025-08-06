@@ -29,6 +29,8 @@ class FedAsyncStrategy(Strategy):
         self.client_id_map = {}
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.global_testset = self._load_global_testset()
+        self.wall_clock_durations = []  # <-- Add this line
+        self.last_round_end_time = None  # <-- Add this line
 
     def _load_schedule(self):
         self.logger.info(f"Visibility schedule path: {self.visibility_path}")
@@ -91,12 +93,21 @@ class FedAsyncStrategy(Strategy):
         return [(client, FitIns(parameters, {"server_round": server_round})) for client in visible_clients]
 
     def aggregate_fit(self, server_round, results, failures):
+        # --- Wall-clock timing start ---
+        now = time.time()
+        if self.last_round_end_time is not None:
+            round_duration = now - self.last_round_end_time
+            self.logger.info(f"[ROUND {server_round}] Wall-clock duration: {round_duration:.2f} seconds")
+            self.wall_clock_durations.append(round_duration)
+        self.last_round_end_time = now
+        # --- Wall-clock timing end ---
+
         if not results:
             return self.current_weights, {}
 
         for client, fit_res in results:
             staleness = self.client_staleness.get(client.cid, 0)
-            alpha = np.exp(-staleness)  # Soft max with staleness...
+            alpha = np.exp(-staleness)
             client_weights = fl.common.parameters_to_ndarrays(fit_res.parameters)
 
             if self.current_weights is None:
@@ -162,30 +173,47 @@ class FedAsyncStrategy(Strategy):
             x_smooth, y_smooth = x, y
 
         plt.figure(figsize=(10, 6), dpi=200)
-        plt.plot(x_smooth, y_smooth, label=f"{strategy_name} (smoothed)", linewidth=2.5)
-        plt.scatter(x, y, color='orange', label="Actual")
+        plt.plot(x_smooth, y_smooth, color='seagreen', linewidth=2.5, label=f"{strategy_name} (smoothed)")
+        plt.scatter(x, y, color='tomato', s=40, zorder=5, label="Actual Rounds")
         plt.title(f"{strategy_name}: Global Accuracy vs. Simulated Time", fontsize=18, fontweight='bold')
         plt.xlabel("Simulated Time (hours)", fontsize=16)
         plt.ylabel("Accuracy", fontsize=16)
+        plt.legend(fontsize=13)
         plt.grid(True, linestyle='--', alpha=0.3)
-        plt.legend()
         plt.tight_layout()
 
-        chart_path = os.path.join(results_dir, f"{strategy_name}_accuracy_vs_time.png")
+        # Annotate average wall-clock round duration at the bottom right
+        if self.wall_clock_durations:
+            avg_wall = np.mean(self.wall_clock_durations)
+            plt.text(
+                0.98, 0.02,
+                f"Avg. wall-clock round duration: {avg_wall:.2f} s",
+                fontsize=12,
+                color="royalblue",
+                ha="right", va="bottom",
+                transform=plt.gca().transAxes,
+                bbox=dict(facecolor='white', alpha=0.7, edgecolor='none')
+            )
+
+        plot_path = os.path.join(results_dir, f"{strategy_name}_accuracy_vs_time.png")
+        plt.savefig(plot_path, bbox_inches='tight', dpi=300)
+        plt.close()
+        self.logger.info(f"Saved chart to {plot_path}")
+
         history_path = os.path.join(results_dir, "server_history.json")
-        plt.savefig(chart_path, dpi=300)
-
         with open(history_path, "w") as f:
-            json.dump({"times": self.round_times, "accuracies": self.round_accuracies}, f, indent=2)
-
-        self.logger.info(f"[✓] Saved chart to {chart_path}")
-        self.logger.info(f"[✓] Saved server history to {history_path}")
+            json.dump({
+                "times": self.round_times,
+                "accuracies": self.round_accuracies,
+                "wall_clock_durations": self.wall_clock_durations,
+            }, f, indent=2)
+        self.logger.info(f"Saved server history to {history_path}")
 
 def main():
     strategy = FedAsyncStrategy("/app/visibility/visibility_schedule.json")
     fl.server.start_server(
         server_address="[::]:8080",
-        config=fl.server.ServerConfig(num_rounds=31),  # Adjusted to 31 rounds.. Because 0-indexed..
+        config=fl.server.ServerConfig(num_rounds=30),  # Adjusted to 30 rounds.. Because 0-indexed..
         strategy=strategy,
     )
     os.makedirs("results", exist_ok=True)

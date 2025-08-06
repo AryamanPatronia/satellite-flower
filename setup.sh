@@ -17,6 +17,11 @@ echo "Cleaning data folder (if exists)..."
 rm -rf data/clients_data
 rm -rf data/raw
 
+# Install Pumba for chaos simulation(docker should be installed)...
+echo "Installing Pumba for chaos simulation..."
+echo "Pulling Pumba Docker image for chaos simulation (required for injecting chaos)..."
+docker pull gaiaadm/pumba:latest
+
 # Run data download and partition
 echo "Downloading EuroSAT dataset..."
 python3 download_eurosat.py

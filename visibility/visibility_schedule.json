@@ -1,112 +1,32 @@
 {
-  "round_1": [
-    "satellite_5"
-  ],
-  "round_2": [
-    "satellite_4",
-    "satellite_2"
-  ],
-  "round_3": [
-    "satellite_5",
-    "satellite_1"
-  ],
-  "round_4": [
-    "satellite_5"
-  ],
-  "round_5": [
-    "satellite_4",
-    "satellite_2"
-  ],
-  "round_6": [
-    "satellite_5",
-    "satellite_2"
-  ],
-  "round_7": [
-    "satellite_5"
-  ],
-  "round_8": [
-    "satellite_4",
-    "satellite_2"
-  ],
-  "round_9": [
-    "satellite_5",
-    "satellite_3"
-  ],
-  "round_10": [
-    "satellite_5"
-  ],
-  "round_11": [
-    "satellite_4",
-    "satellite_2"
-  ],
-  "round_12": [
-    "satellite_5",
-    "satellite_4"
-  ],
-  "round_13": [
-    "satellite_5"
-  ],
-  "round_14": [
-    "satellite_4",
-    "satellite_2"
-  ],
-  "round_15": [
-    "satellite_5",
-    "satellite_5"
-  ],
-  "round_16": [
-    "satellite_5"
-  ],
-  "round_17": [
-    "satellite_4",
-    "satellite_2"
-  ],
-  "round_18": [
-    "satellite_5",
-    "satellite_1"
-  ],
-  "round_19": [
-    "satellite_5"
-  ],
-  "round_20": [
-    "satellite_4",
-    "satellite_2"
-  ],
-  "round_21": [
-    "satellite_5",
-    "satellite_2"
-  ],
-  "round_22": [
-    "satellite_5"
-  ],
-  "round_23": [
-    "satellite_4",
-    "satellite_2"
-  ],
-  "round_24": [
-    "satellite_5",
-    "satellite_3"
-  ],
-  "round_25": [
-    "satellite_5"
-  ],
-  "round_26": [
-    "satellite_4",
-    "satellite_2"
-  ],
-  "round_27": [
-    "satellite_5",
-    "satellite_4"
-  ],
-  "round_28": [
-    "satellite_5"
-  ],
-  "round_29": [
-    "satellite_4",
-    "satellite_2"
-  ],
-  "round_30": [
-    "satellite_5",
-    "satellite_5"
-  ]
+  "round_1": ["satellite_5"],
+  "round_2": ["satellite_4", "satellite_2"],
+  "round_3": ["satellite_5", "satellite_1"],
+  "round_4": ["satellite_5"],
+  "round_5": ["satellite_4", "satellite_2"],
+  "round_6": ["satellite_5", "satellite_2"],
+  "round_7": ["satellite_5"],
+  "round_8": ["satellite_4", "satellite_2"],
+  "round_9": ["satellite_5", "satellite_3"],
+  "round_10": ["satellite_5"],
+  "round_11": ["satellite_4", "satellite_2"],
+  "round_12": ["satellite_5", "satellite_4"],
+  "round_13": ["satellite_5"],
+  "round_14": ["satellite_4", "satellite_2"],
+  "round_15": ["satellite_5", "satellite_5"],
+  "round_16": ["satellite_5"],
+  "round_17": ["satellite_4", "satellite_2"],
+  "round_18": ["satellite_5", "satellite_1"],
+  "round_19": ["satellite_5"],
+  "round_20": ["satellite_4", "satellite_2"],
+  "round_21": ["satellite_5", "satellite_2"],
+  "round_22": ["satellite_5"],
+  "round_23": ["satellite_4", "satellite_2"],
+  "round_24": ["satellite_5", "satellite_3"],
+  "round_25": ["satellite_5"],
+  "round_26": ["satellite_4", "satellite_2"],
+  "round_27": ["satellite_5", "satellite_4"],
+  "round_28": ["satellite_5"],
+  "round_29": ["satellite_4", "satellite_2"],
+  "round_30": ["satellite_5", "satellite_5"]
 }

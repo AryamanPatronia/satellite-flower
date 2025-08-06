@@ -20,12 +20,12 @@ def smooth_curve(y, window=5):
 
 # Map of constellation name to result file
 files = {
-    "Baseline (All Visible)": "results/results_FedAvg/FedAvg_baseline.json",
-    "Walker Star": "results/results_FedAvg/FedAvg_walker_star.json",
-    "Polar SSO": "results/results_FedAvg/FedAvg_polar_sso.json",
-    "Inclined Sparse": "results/results_FedAvg/FedAvg_inclined_sparse.json",
-    "Retrograde Polar": "results/results_FedAvg/FedAvg_retrograde_polar.json",
-    "Equatorial": "results/results_FedAvg/FedAvg_equatorial.json",
+    "Baseline (All Visible)": "results/results_FedAsync/FedAsync_baseline.json",
+    "Walker Star": "results/results_FedAsync/FedAsync_walker_star.json",
+    "Polar SSO": "results/results_FedAsync/FedAsync_polar_sso.json",
+    "Inclined Sparse": "results/results_FedAsync/FedAsync_inclined_sparse.json",
+    "Retrograde Polar": "results/results_FedAsync/FedAsync_retrograde_polar.json",
+    "Equatorial": "results/results_FedAsync/FedAsync_equatorial.json",
 }
 
 # Square-shaped figure (equal width and height)
@@ -51,7 +51,7 @@ for label, path in files.items():
 
     plt.plot(times_smooth, accs_smooth, label=legend_label, linewidth=2)
 
-plt.title("FedAvg: Central Test Accuracy Across Constellations")
+plt.title("FedAsync: Central Test Accuracy Across Constellations")
 plt.xlabel("Simulated Time (hours)")
 plt.ylabel("Central Test Accuracy")
 plt.legend(fontsize=10, loc="lower right")
@@ -59,4 +59,4 @@ plt.grid(True)
 plt.tight_layout()
 plt.xlim(times[1], times[-2])  # Set x-axis to data range
 plt.margins(x=0) 
-plt.savefig("FedAvg_all_constellations.png", dpi=300)
+plt.savefig("FedAsync_all_constellations.png", dpi=300)

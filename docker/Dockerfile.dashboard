@@ -8,3 +8,7 @@ COPY shared_logs shared_logs
 RUN pip install rich
 
 CMD ["python", "status_monitor.py"]
+
+
+# This dashboard is no longer used, but it is kept for reference.
+# It was used to monitor the status of the satellite flower system during early development...

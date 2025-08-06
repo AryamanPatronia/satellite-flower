@@ -60,14 +60,21 @@ def run_simulation(name, file):
     # 4. Launch containers
     os.environ["RESULTS_DIR"] = RESULTS_DIR
     os.environ["SERVER_TYPE"] = SERVER_TYPE
-
     subprocess.run(
         ["docker-compose", "-f", "docker/docker-compose.yml", "up", "--build", "-d"],
         env={**os.environ, "RESULTS_DIR": RESULTS_DIR, "SERVER_TYPE": SERVER_TYPE}
     )
 
+    # 4.5. Inject chaos if a script exists for this constellation
+    chaos_script = f"chaos/{name}.sh"
+    if os.path.exists(chaos_script):
+        print(f"[+] Injecting chaos using {chaos_script}")
+        subprocess.Popen(["bash", chaos_script])
+    else:
+        print(f"No chaos script found for {name}, proceeding without chaos injection.")
+
     # 5. Wait for training to finish
-    if not wait_for_training_finish():
+    if not wait_for_training_finish(expected_rounds=30):
         print("[-] Timeout or error: Training may have failed.")
         return
 

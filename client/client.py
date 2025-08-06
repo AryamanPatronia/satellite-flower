@@ -63,6 +63,7 @@ class SatelliteClient(fl.client.NumPyClient):
 
     def fit(self, parameters, config):
         current_round = int(config.get("server_round", 1))
+        self.log_chaos_status()  # for chaos status logging...
         self.logger.info(f"Config received: {config}")
 
         if not self.is_visible(current_round):
@@ -80,6 +81,7 @@ class SatelliteClient(fl.client.NumPyClient):
 
     def evaluate(self, parameters, config):
         current_round = int(config.get("server_round", 1))
+        self.log_chaos_status()  # for chaos status logging...
         self.logger.info(f"Config received: {config}")
 
         if not self.is_visible(current_round):
@@ -108,6 +110,16 @@ class SatelliteClient(fl.client.NumPyClient):
                 print("[Client] Server not ready yet, retrying in 2s...")
                 import time
                 time.sleep(2)
+
+    def log_chaos_status(self):
+        chaos_file = self.status_file.replace('.txt', '.chaos.txt')
+        try:
+            with open(chaos_file, "r") as f:
+                status = f.read().strip()
+            if "Chaos injected" in status:
+                self.logger.info(f"CHAOS ACTIVE: {status}")
+        except Exception:
+            pass
 
 if __name__ == "__main__":
     cid = os.environ.get("CLIENT_ID", "1")

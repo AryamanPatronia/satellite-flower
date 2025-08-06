@@ -16,37 +16,45 @@ client_classes = {
 def save_schedule(name, schedule):
     path = os.path.join(CONSTELLATION_DIR, f"{name}.json")
     with open(path, "w") as f:
-        json.dump(schedule, f, indent=2)
+        f.write("{\n")
+        rounds = list(schedule.items())
+        for idx, (rnd, sats) in enumerate(rounds):
+            line = f'  "{rnd}": {json.dumps(sats)}'
+            if idx < len(rounds) - 1:
+                line += ","
+            f.write(line + "\n")
+        f.write("}\n")
     print(f"Saved {name}.json in {CONSTELLATION_DIR}")
 
 def make_baseline():
-    # All satellites visible every round
+    # All satellites visible every round (best availability)
     schedule = {f"round_{i+1}": [f"satellite_{j+1}" for j in range(5)] for i in range(30)}
     save_schedule("baseline", schedule)
 
 def make_walker_star():
-    # 3 satellites per round, rotating, like your current walker_star.json
+    # 4 satellites per round, rotating window (high availability)
     satellites = [f"satellite_{i+1}" for i in range(5)]
     schedule = {}
     for i in range(30):
-        group = [satellites[(i+j)%5] for j in range(3)]
+        group = [satellites[(i+j)%5] for j in range(4)]
         schedule[f"round_{i+1}"] = group
     save_schedule("walker_star", schedule)
 
 def make_polar_sso():
-    # Use the improved rotation for class coverage
-    rotation = [
-        ["satellite_1", "satellite_4"],  # [0,1,2,3] + [6,7,8,9]
-        ["satellite_2", "satellite_5"],  # [2,3,4,5] + [0,1,8,9]
-        ["satellite_3", "satellite_4"],  # [4,5,6,7] + [6,7,8,9]
-    ]
+    # 3 satellites per round, rotating triplets (moderate availability)
+    satellites = [f"satellite_{i+1}" for i in range(5)]
+    triplets = []
+    for i in range(5):
+        for j in range(i+1, 5):
+            for k in range(j+1, 5):
+                triplets.append([satellites[i], satellites[j], satellites[k]])
     schedule = {}
     for i in range(30):
-        schedule[f"round_{i+1}"] = rotation[i % 3]
+        schedule[f"round_{i+1}"] = triplets[i % len(triplets)]
     save_schedule("polar_sso", schedule)
 
 def make_equatorial():
-    # 2 satellites per round, but avoid always adjacent, and allow some solo/empty rounds for realism
+    # 2 satellites per round, rotating pairs, every 10th round all 5 (low-moderate availability)
     satellites = [f"satellite_{i+1}" for i in range(5)]
     pairs = [
         ["satellite_1", "satellite_2"],
@@ -54,23 +62,17 @@ def make_equatorial():
         ["satellite_3", "satellite_4"],
         ["satellite_4", "satellite_5"],
         ["satellite_5", "satellite_1"],
-        ["satellite_1", "satellite_3"],
-        ["satellite_2", "satellite_4"],
-        ["satellite_3", "satellite_5"],
-        ["satellite_4", "satellite_1"],
-        ["satellite_5", "satellite_2"],
     ]
     schedule = {}
     for i in range(30):
         if i % 10 == 9:
-            # Simulate a gap (no satellite visible)
-            schedule[f"round_{i+1}"] = []
+            schedule[f"round_{i+1}"] = satellites  # all 5
         else:
             schedule[f"round_{i+1}"] = pairs[i % len(pairs)]
     save_schedule("equatorial", schedule)
 
 def make_inclined_sparse():
-    # 2 satellites per round, but rotate so every satellite pairs with every other
+    # 2 satellites per round, cycling through all pairs (low availability)
     satellites = [f"satellite_{i+1}" for i in range(5)]
     pairs = []
     for i in range(5):
@@ -82,7 +84,7 @@ def make_inclined_sparse():
     save_schedule("inclined_sparse", schedule)
 
 def make_retrograde_polar():
-    # Alternate between single and pairs, always including satellite_5 frequently (retrograde)
+    # Mostly single satellite per round, sometimes a pair (extremely low availability)
     satellites = [f"satellite_{i+1}" for i in range(5)]
     schedule = {}
     for i in range(30):

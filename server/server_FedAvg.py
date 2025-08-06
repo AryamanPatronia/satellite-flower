@@ -35,6 +35,7 @@ class VisibleClientFedAvg(FedAvg):
         self.client_id_map = {}
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.global_testset = self.load_global_testset()
+        self.last_round_end_time = None 
 
         self.logger.info(f"Visibility schedule path: {visibility_path}")
         if os.path.exists(visibility_path):
@@ -83,11 +84,32 @@ class VisibleClientFedAvg(FedAvg):
         return self.evaluate(server_round, self.current_weights)
 
     def aggregate_fit(self, server_round, results, failures):
+        now = time.time()
+        if self.last_round_end_time is not None:
+            round_duration = now - self.last_round_end_time
+            self.logger.info(f"[ROUND {server_round}] Wall-clock duration: {round_duration:.2f} seconds")
+            if not hasattr(self, "wall_clock_durations"):
+                self.wall_clock_durations = []
+            self.wall_clock_durations.append(round_duration)
+        self.last_round_end_time = now
+
+        round_start = time.time()  # Start timing
+
         if not results or sum(fit_res.num_examples for _, fit_res in results) == 0:
             self.logger.warning(f"[ROUND {server_round}] No training examples, skipping aggregation.")
             return self.current_weights, {}
+
         weights_results = super().aggregate_fit(server_round, results, failures)
         self.current_weights = weights_results[0]
+
+        round_end = time.time()  # End timing
+        round_duration = round_end - round_start
+        self.logger.info(f"[ROUND {server_round}] Duration: {round_duration:.2f} seconds")
+        # Optionally, store durations for later analysis/plotting:
+        if not hasattr(self, "round_durations"):
+            self.round_durations = []
+        self.round_durations.append(round_duration)
+
         return weights_results
 
     def plot_accuracy_chart(self):
@@ -119,18 +141,32 @@ class VisibleClientFedAvg(FedAvg):
         plt.grid(True, linestyle='--', alpha=0.3)
         plt.tight_layout()
 
+        # Annotate average wall-clock round duration at the bottom right
+        if hasattr(self, "wall_clock_durations") and self.wall_clock_durations:
+            avg_wall = np.mean(self.wall_clock_durations)
+            plt.text(
+                0.98, 0.02,
+                f"Avg. wall-clock round duration: {avg_wall:.2f} s",
+                fontsize=12,
+                color="royalblue",
+                ha="right", va="bottom",
+                transform=plt.gca().transAxes,
+                bbox=dict(facecolor='white', alpha=0.7, edgecolor='none')
+            )
+
         plot_path = os.path.join(results_dir, f"{strategy_name}_accuracy_vs_time.png")
         plt.savefig(plot_path, bbox_inches='tight', dpi=300)
         plt.close()
-        self.logger.info(f"[✓] Saved chart to {plot_path}")
+        self.logger.info(f"Saved chart to {plot_path}")
 
         history_path = os.path.join(results_dir, "server_history.json")
         with open(history_path, "w") as f:
             json.dump({
                 "times": self.round_times,
                 "accuracies": self.round_accuracies,
+                "wall_clock_durations": getattr(self, "wall_clock_durations", []),
             }, f, indent=2)
-        self.logger.info(f"[✓] Saved server history to {history_path}")
+        self.logger.info(f"Saved server history to {history_path}")
 
     def configure_fit(self, server_round: int, parameters, client_manager):
         all_clients = list(client_manager.all().values())

@@ -1,7 +1,8 @@
 # Ignore everything inside shared_logs except the folder itself
 shared_logs/*
 !shared_logs/.gitkeep
-
+# This folder and the dashboard is no longer being used but kept for reference...
+# It was used to monitor the status of the satellite flower system during early development...
 
 # This folder has contains the files like satellite_1.txt, satellite_2.txt, etc.
 # which are generated during the simulation.
@@ -21,7 +22,12 @@ constellations/*
 !constellations/.gitkeep
 
 
-# Ignore everything inside CMaps except the folder itself
+# Ignore everything inside CMaps except the folder itself...
 CMaps/*
 !CMaps/.gitkeep
+
+
+# Ignore everything inside results except the folder itself...
+results/*
+!results/.gitkeep
 
