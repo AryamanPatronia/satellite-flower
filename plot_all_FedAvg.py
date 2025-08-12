@@ -13,7 +13,7 @@ plt.rcParams.update({
     "figure.dpi": 150,
 })
 
-def smooth_curve(y, window=5):
+def smooth_curve(y, window=3):
     if len(y) < window:
         return y
     return np.convolve(y, np.ones(window)/window, mode='valid')

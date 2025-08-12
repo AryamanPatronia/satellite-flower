@@ -16,10 +16,11 @@ from torch.utils.data import DataLoader, TensorDataset
 import torch.nn.functional as F
 import sys
 
-# Load the model from client code
+# Load the model from client code...
 sys.path.append("/app/client")
 from train import Net
 
+# Suppress deprecation warnings from Flower...
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 
@@ -43,7 +44,7 @@ class VisibleClientFedAvg(FedAvg):
                 self.visibility_schedule = json.load(f)
                 self.logger.info(f"Loaded schedule with {len(self.visibility_schedule)} rounds")
         else:
-            self.logger.warning("No visibility schedule found. All clients will be used.")
+            self.logger.warning("No visibility schedule found. Using all clients...")
 
     def load_global_testset(self):
         path = "/app/data/central_testset"
@@ -75,7 +76,7 @@ class VisibleClientFedAvg(FedAvg):
 
         acc = correct / total
         self.round_accuracies.append(acc)
-        self.round_times.append(server_round * 4)  # Each round = 4 simulated hours
+        self.round_times.append(server_round * 4)  # Each round = 4 hours in simulation...
         self.logger.info(f"[ROUND {server_round}] Central Test Accuracy: {acc:.4f}")
         return 0.0, {"accuracy": acc}
 

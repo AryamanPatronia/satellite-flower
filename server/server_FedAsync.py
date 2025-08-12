@@ -29,8 +29,8 @@ class FedAsyncStrategy(Strategy):
         self.client_id_map = {}
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.global_testset = self._load_global_testset()
-        self.wall_clock_durations = []  # <-- Add this line
-        self.last_round_end_time = None  # <-- Add this line
+        self.wall_clock_durations = []
+        self.last_round_end_time = None
 
     def _load_schedule(self):
         self.logger.info(f"Visibility schedule path: {self.visibility_path}")
@@ -50,7 +50,7 @@ class FedAsyncStrategy(Strategy):
     def _get_visible_ids(self, rnd: int) -> List[str]:
         return self.visibility_schedule.get(f"round_{rnd}", [])
 
-    EXPECTED_CLIENTS = 5
+    EXPECTED_CLIENTS = 5 # 5 Needed to simulate 5 satellites...
 
     def initialize_parameters(self, client_manager):
         self.logger.info("Waiting for all clients to connect...")

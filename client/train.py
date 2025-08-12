@@ -34,8 +34,8 @@ def load_data(client_id):
 def train(model, train_loader, epochs, device):
     model.train()
     criterion = torch.nn.CrossEntropyLoss()
-    # Lower learning rate for smoother FedAvg...
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.0005, weight_decay=1e-5)
+    # Changed optimizer to SGD with momentum and increased epochs to 3 for comparison...
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
     for epoch in range(epochs):
         running_loss = 0.0
         correct, total = 0, 0
@@ -82,15 +82,14 @@ if __name__ == "__main__":
     print("Model architecture:")
     print(model)
 
-    # TEST
     DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(DEVICE)
 
     trainloader = DataLoader(trainset, batch_size=32, shuffle=True)
     testloader = DataLoader(testset, batch_size=32)
 
-    # Using 1 epoch for FedAvg...
-    train(model, trainloader, epochs=1, device=DEVICE)
+    # Using 3 epochs for FedAvg and FedAsync and SGD optimizer...
+    train(model, trainloader, epochs=3, device=DEVICE)
     accuracy = test(model, testloader, device=DEVICE)
     print(f"Local test accuracy after training: {accuracy:.4f}")
 

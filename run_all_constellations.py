@@ -18,8 +18,8 @@ SERVER_TYPE = os.environ.get("SERVER_TYPE", "FedAsync")
 RESULTS_DIR = f"results/results_{SERVER_TYPE}"
 SERVER_LOG_PATH = "shared_logs/server.log"
 
-def wait_for_training_finish(expected_rounds=30, timeout=1800):
-    print(f"[+] Waiting for training to complete (watching {RESULTS_DIR}/server_history.json)...")
+def wait_for_training_finish(expected_rounds=30, timeout=2000):
+    print(f"Waiting for training to complete (watching {RESULTS_DIR}/server_history.json)...")
     history_path = f"{RESULTS_DIR}/server_history.json"
     waited = 0
     while waited < timeout:
@@ -31,33 +31,33 @@ def wait_for_training_finish(expected_rounds=30, timeout=1800):
                     print(f"[DEBUG] Found {len(data['accuracies'])} rounds so far")
                 # Check if the expected number of rounds is reached
                 if "accuracies" in data and len(data["accuracies"]) >= expected_rounds:
-                    print("[✓] Training complete!")
+                    print("Training complete!")
                     return True
             except Exception as e:
-                print(f"[!] Error reading server_history.json: {e}")
+                print(f"Error reading server_history.json: {e}")
         time.sleep(5)
         waited += 5
-    print("[-] Timeout waiting for training to finish.")
+    print("Timeout waiting for training to finish.")
     return False
 
 def run_simulation(name, file):
-    print(f"\n[+] Running {SERVER_TYPE} for constellation: {name}")
+    print(f"\nRunning {SERVER_TYPE} for constellation: {name}")
 
-    # 1. Copy visibility schedule
+    # Overwrite visibility schedule with the new constellation file...
     shutil.copyfile(
         os.path.join("constellations", file),
         "visibility/visibility_schedule.json"
     )
 
-    # 2. Clean
+    # Clean up previous Docker containers and images...
     subprocess.run(["docker-compose", "-f", "docker/docker-compose.yml", "down", "-v", "--remove-orphans"])
     subprocess.run(["docker", "image", "prune", "-a", "-f"])
 
-    # 3. Clean previous log
+    # Clean previous logs...
     if os.path.exists(SERVER_LOG_PATH):
         os.remove(SERVER_LOG_PATH)
 
-    # 4. Launch containers
+    # Launch containers...
     os.environ["RESULTS_DIR"] = RESULTS_DIR
     os.environ["SERVER_TYPE"] = SERVER_TYPE
     subprocess.run(
@@ -65,40 +65,40 @@ def run_simulation(name, file):
         env={**os.environ, "RESULTS_DIR": RESULTS_DIR, "SERVER_TYPE": SERVER_TYPE}
     )
 
-    # 4.5. Inject chaos if a script exists for this constellation
+    # Inject chaos if a script exists for this constellation...
     chaos_script = f"chaos/{name}.sh"
     if os.path.exists(chaos_script):
-        print(f"[+] Injecting chaos using {chaos_script}")
+        print(f"Injecting chaos using {chaos_script}")
         subprocess.Popen(["bash", chaos_script])
     else:
         print(f"No chaos script found for {name}, proceeding without chaos injection.")
 
-    # 5. Wait for training to finish
+    # Wait for training to finish...
     if not wait_for_training_finish(expected_rounds=30):
-        print("[-] Timeout or error: Training may have failed.")
+        print("Timeout or error: Training may have failed.")
         return
 
-    # 6. Move accuracy plot
+    # Move accuracy plot...
     src_chart = f"{RESULTS_DIR}/{SERVER_TYPE}_accuracy_vs_time.png"
     dst_chart = f"{RESULTS_DIR}/{SERVER_TYPE}_{name}.png"
     if os.path.exists(src_chart):
         shutil.move(src_chart, dst_chart)
-        print(f"[✓] Saved result chart as {dst_chart}")
+        print(f"Saved result chart as {dst_chart}")
     else:
-        print("[-] Warning: Accuracy chart not found!")
+        print("Warning: Accuracy chart not found!")
 
     # 7. Move server history
     src_history = f"{RESULTS_DIR}/server_history.json"
     dst_history = f"{RESULTS_DIR}/{SERVER_TYPE}_{name}.json"
     if os.path.exists(src_history):
         shutil.move(src_history, dst_history)
-        print(f"[✓] Saved history JSON as {dst_history}")
+        print(f"Saved history JSON as {dst_history}")
     else:
-        print("[-] Warning: Server history not found!")
+        print("Warning: Server history not found!")
 
 if __name__ == "__main__":
     os.makedirs(RESULTS_DIR, exist_ok=True)
     for name, file in CONSTELLATIONS.items():
         run_simulation(name, file)
 
-    print(f"\n[✓] All {SERVER_TYPE} simulations complete.")
+    print(f"\nAll {SERVER_TYPE} simulations complete.")
