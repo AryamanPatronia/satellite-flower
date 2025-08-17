@@ -49,7 +49,7 @@
 
 - All data and generated files are ignored by git, so you must run [setup.sh](http://_vscodecontentref_/2) before running any simulations.
 - The [constellations](http://_vscodecontentref_/3) folder will be set up automatically and you do not need to edit or add files there.
-- If you encounter any issues, check if Docker is running properly and your Python. virtual environment is activated.
+- If you encounter any issues, check if Docker is running properly and your Python virtual environment is activated.
 
 ---
 
