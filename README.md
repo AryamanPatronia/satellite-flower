@@ -1,39 +1,47 @@
-# Federated Learning on Edge Devices using Flower
+# Federated Learning in Satellite Constellations using Flower
 
 ## Setup Instructions
 
 1. **Clone the repository**
-    ```sh
-    git clone https://github.com/AryamanPatronia/satellite-flower
+
+   ```sh
+   git clone https://github.com/AryamanPatronia/satellite-flower
+
+   ```
 
 2. **Installing Docker**
-    - You have to make sure Docker Desktop is installed and running on your machine.  
-      [Download Docker](https://www.docker.com/products/docker-desktop/)
+
+   - You have to make sure Docker Desktop is installed and running on your machine.  
+     [Download Docker](https://www.docker.com/products/docker-desktop/)
 
 3. **Run the Setup Script**
-    - This will create a Python virtual environment, install dependencies, download the EuroSAT dataset, partition the data, and generate all the required configuration files.
-    ```sh
-    ./setup.sh
-    ```
+
+   - This will create a Python virtual environment, install dependencies, download the EuroSAT dataset, partition the data, and generate all the required configuration files.
+
+   ```sh
+   ./setup.sh
+   ```
 
 4. **Run a Simulation**
-    - To start a federated learning simulation, use one of the following:
-        - **FedAvg:**  
-          ```sh
-          ./start_FedAvg.sh
-          ```
-        - **FedAsync:**  
-          ```sh
-          ./start_FedFedAsync.sh
-          ```
+
+   - To start a federated learning simulation, use one of the following:
+     - **FedAvg:**
+       ```sh
+       ./start_FedAvg.sh
+       ```
+     - **FedAsync:**
+       ```sh
+       ./start_FedFedAsync.sh
+       ```
 
 5. **View Results**
-    - After training, the chart and the history will be saved in the results/results_FedAvg & results/results_FedAsync folder.
-    - You can visualize the results of both strategies of all constellations using the provided plotting scripts, e.g.:
-      ```sh
-      python plot_all_FedAvg.py
-      python plot_all_FedAsync.py
-      ```
+   - After training, the chart and the history will be saved in the results/results_FedAvg & results/results_FedAsync folder.
+   - You can visualize the results of both strategies of all constellations using the provided plotting scripts, e.g.:
+     ```sh
+     python3 plot_all_FedAvg.py
+     python3 plot_all_FedAsync.py
+     python3 PlotAll.py
+     ```
 
 ---
 

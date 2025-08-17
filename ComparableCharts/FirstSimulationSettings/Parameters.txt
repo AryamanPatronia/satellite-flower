@@ -1,0 +1,49 @@
+Federated Learning Simulation Settings
+Model Architecture
+A custom lightweight convolutional neural network (CNN) was used on all clients, designed for efficient learning on remote sensing data with limited compute resources. The architecture is as follows:
+
+Input: RGB images, 64×64 pixels (EuroSAT dataset)
+Layer 1: 2D Convolution (Conv2d), 3 input channels, 10 output channels, kernel size 5×5, followed by ReLU activation and 2×2 MaxPooling
+Layer 2: 2D Convolution (Conv2d), 10 input channels, 20 output channels, kernel size 5×5, followed by ReLU activation and 2×2 MaxPooling
+Flatten: Output is flattened to a vector of size 20×13×13
+Fully Connected 1: Linear layer with 50 output units, followed by ReLU activation
+Fully Connected 2: Linear layer with 10 output units (one per class)
+Output: Raw logits for 10 classes
+Training Procedure
+Optimizer: Adam
+Learning rate: 0.0005
+Weight decay: 1e-5
+Loss Function: CrossEntropyLoss (no label smoothing)
+Local Training Epochs: 1 per communication round
+Batch Size: 32
+Device: CUDA (GPU) if available, otherwise CPU
+Data Partitioning
+Dataset: EuroSAT (RGB, 64×64)
+Partitioning: The dataset was partitioned into five non-overlapping client datasets, each simulating a satellite. Each client’s data is stored in data/clients_data/client_{client_id}/.
+Label Distribution: Each client receives a unique subset of four classes (out of ten), simulating a highly non-iid scenario:
+Client 1: labels [0, 1, 2, 3]
+Client 2: labels [2, 3, 4, 5]
+Client 3: labels [4, 5, 6, 7]
+Client 4: labels [6, 7, 8, 9]
+Client 5: labels [0, 1, 8, 9]
+Sample Counts: Client datasets range from 1,497 to 1,737 training samples each.
+Pixel Value Range: All images are normalized; pixel values range from approximately -2.6 to 4.4.
+Train/Test Split: Each client’s data is pre-split into training and test sets, saved as PyTorch tensors.
+Central Test Set
+Composition: The central test set contains 1,600 samples, evenly covering all 10 EuroSAT classes ([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]).
+Shape: x shape: [1600, 3, 64, 64], y shape: [1600]
+Pixel Value Range: min ≈ -2.27, max ≈ 4.39
+Purpose: Used for global evaluation after each communication round to assess overall model generalization.
+Evaluation
+Client Metric: Top-1 accuracy on each client’s local test set after local training.
+Central Metric: Top-1 accuracy on the central test set after each round, reported and plotted as a function of simulated time.
+Federated Learning Protocol
+Framework: Flower (flwr)
+Strategy: FedAvg & FedAsync
+Client Participation: Each round, only clients visible according to the satellite-ground visibility schedule participate in training.
+Rounds: 30 communication rounds (each representing 4 hours of simulated time).
+Server Aggregation: Model weights are averaged across participating clients each round.
+Additional Details
+Ground Station: Simulated as a parameter server, located at latitude 55.0°, longitude 0.0°.
+Simulation Environment: All code executed in a controlled environment with deterministic data splits and fixed random seeds for reproducibility.
+Logging: Training loss and accuracy are logged for each client and round; global accuracy is plotted as a function of simulated time.

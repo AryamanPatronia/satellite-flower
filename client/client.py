@@ -7,7 +7,7 @@ import warnings
 import logging
 import json
 
-import socket # For checking server availability
+import socket 
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 

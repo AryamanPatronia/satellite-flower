@@ -18,11 +18,10 @@ SERVER_TYPE = os.environ.get("SERVER_TYPE", "FedAsync")
 RESULTS_DIR = f"results/results_{SERVER_TYPE}"
 SERVER_LOG_PATH = "shared_logs/server.log"
 
-def wait_for_training_finish(expected_rounds=30, timeout=2000):
+def wait_for_training_finish(expected_rounds=30):
     print(f"Waiting for training to complete (watching {RESULTS_DIR}/server_history.json)...")
     history_path = f"{RESULTS_DIR}/server_history.json"
-    waited = 0
-    while waited < timeout:
+    while True:
         if os.path.exists(history_path):
             try:
                 with open(history_path, "r") as f:
@@ -36,9 +35,6 @@ def wait_for_training_finish(expected_rounds=30, timeout=2000):
             except Exception as e:
                 print(f"Error reading server_history.json: {e}")
         time.sleep(5)
-        waited += 5
-    print("Timeout waiting for training to finish.")
-    return False
 
 def run_simulation(name, file):
     print(f"\nRunning {SERVER_TYPE} for constellation: {name}")
@@ -71,7 +67,7 @@ def run_simulation(name, file):
         print(f"Injecting chaos using {chaos_script}")
         subprocess.Popen(["bash", chaos_script])
     else:
-        print(f"No chaos script found for {name}, proceeding without chaos injection.")
+        print(f"No chaos script found for {name} schedule, add chaos in future...")
 
     # Wait for training to finish...
     if not wait_for_training_finish(expected_rounds=30):
