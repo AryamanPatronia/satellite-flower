@@ -31,7 +31,7 @@
        ```
      - **FedAsync:**
        ```sh
-       ./start_FedFedAsync.sh
+       ./start_FedAsync.sh
        ```
 
 5. **View Results**
