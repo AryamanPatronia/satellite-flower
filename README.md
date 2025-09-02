@@ -164,6 +164,13 @@ Key findings after 30 rounds (120 simulated hours):
 - Explore stronger models such as ResNet, MobileNet, or Transformer-based architectures for satellite image classification.  
 - Run longer training horizons and multiple trials to improve robustness and statistical validity.  
 
+---
+
+## Demo Video
+
+[![Watch the demo](https://img.youtube.com/vi/Xt6NRUOaK-Y/0.jpg)](https://www.youtube.com/watch?v=Xt6NRUOaK-Y)
+
+*Click the thumbnail above to watch the project demonstration on YouTube.*
 
 ---
 
